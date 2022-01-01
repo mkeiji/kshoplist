@@ -124,23 +124,6 @@ void _goToListPage(Shop store, BuildContext context) {
   );
 }
 
-GestureDetector _getBtn(Shop store, BuildContext context) {
-  return GestureDetector(
-    child: Container(
-      width: 200,
-      height: 50,
-      decoration: BoxDecoration(
-        color: null,
-        image: DecorationImage(
-          image: AssetImage(store.img as String),
-          fit: BoxFit.cover,
-        ),
-      ),
-    ),
-    onTap: () => _goToListPage(store, context),
-  );
-}
-
 GestureDetector _getSizedBoxBtn(
   Shop store,
   BuildContext context,
