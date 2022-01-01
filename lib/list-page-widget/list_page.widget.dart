@@ -18,10 +18,13 @@ class _ListPageWidgetState extends State<ListPageWidget> {
   final TextEditingController _textEditingController = TextEditingController();
 
   // Todo: this should come from api
-  List<Item> items = [];
+  List<Item> items = [
+    Item(1, 'costco item', 1),
+    Item(2, 'safeway item', 2),
+  ];
   int _counter = 0;
 
-  Future<void> showAddItemDialog(BuildContext context) async {
+  Future<void> showAddItemDialog(BuildContext context, int shopId) async {
     String placeholder = 'Enter item name';
     String? input;
 
@@ -33,7 +36,7 @@ class _ListPageWidgetState extends State<ListPageWidget> {
             TextFormField(
               controller: _textEditingController,
               validator: (value) {
-                return value!.isNotEmpty ? null : placeholder;
+                return value!.isNotEmpty ? null : '*Item name is required';
               },
               onChanged: (change) => {input = change},
               decoration: InputDecoration(
@@ -55,8 +58,11 @@ class _ListPageWidgetState extends State<ListPageWidget> {
       onPressed: () => {
         if (_formKey.currentState!.validate())
           {
-            _addItem(input),
-            _textEditingController.clear(),
+            if (input != null)
+              {
+                _addItem(input as String, shopId),
+                _textEditingController.clear(),
+              },
             Navigator.of(context).pop(),
           }
       },
@@ -79,16 +85,10 @@ class _ListPageWidgetState extends State<ListPageWidget> {
         });
   }
 
-  void _addItem(String? name) {
-    String itemName = 'item $_counter';
-
-    if (name != null) {
-      itemName = name;
-    }
-
+  void _addItem(String name, int shopId) {
     setState(() {
       // Todo: should call api
-      items.add(Item(_counter, itemName, 1));
+      items.add(Item(_counter, name, shopId));
       _counter++;
     });
   }
@@ -104,29 +104,33 @@ class _ListPageWidgetState extends State<ListPageWidget> {
   @override
   Widget build(BuildContext context) {
     String title = '${widget.shop.name} List';
+    List<Item> filteredList =
+        items.where((Item i) => i.storeId == widget.shop.id).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
       ),
       body: ListView.separated(
-        itemCount: items.length,
+        itemCount: filteredList.length,
         separatorBuilder: (BuildContext context, int index) => const Divider(
           height: 3,
           color: Colors.lightBlue,
         ),
         itemBuilder: (context, index) {
+          // Todo: add Edit feature
           return ListTile(
-            title: Text(items[index].name),
+            title: Text(filteredList[index].name),
             trailing: IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () => _deleteItem(items[index].id),
+              onPressed: () => _deleteItem(filteredList[index].id),
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await showAddItemDialog(context);
+          await showAddItemDialog(context, widget.shop.id as int);
         },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
