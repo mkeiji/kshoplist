@@ -47,7 +47,7 @@ GestureDetector _getSizedBoxBtn(
 ) {
   return GestureDetector(
     child: SizedBox(
-      child: Image.asset(
+      child: Image.network(
         store.img as String,
         width: 200,
         height: 50,
