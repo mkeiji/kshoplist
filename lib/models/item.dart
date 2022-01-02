@@ -1,10 +1,10 @@
 class Item {
   final int? id;
-  final String name;
   final int storeId;
+  String name;
 
-  Item(this.id, this.name, this.storeId);
-  Item.noId(this.name, this.storeId): id = null;
+  Item(this.id, this.storeId, this.name);
+  Item.noId(this.storeId, this.name): id = null;
   Item.fromJson(Map<dynamic, dynamic> json)
       : id = json['id'] as int,
         storeId = json['storeId'] as int,

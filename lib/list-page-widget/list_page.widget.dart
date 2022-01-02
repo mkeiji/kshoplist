@@ -14,82 +14,82 @@ class ListPageWidget extends StatefulWidget {
 /* STATE
 ---------------------------------------------------------------------*/
 class _ListPageWidgetState extends State<ListPageWidget> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _textEditingController = TextEditingController();
+  final GlobalKey<FormState> _addFormKey = GlobalKey<FormState>();
+  final TextEditingController _addTextController = TextEditingController();
+  final GlobalKey<FormState> _editFormKey = GlobalKey<FormState>();
+  final TextEditingController _editTextController = TextEditingController();
 
   // Todo: this should come from api
   List<Item> items = [
-    Item(1, 'costco item', 1),
-    Item(2, 'safeway item', 2),
+    Item(1, 1, 'costco item'),
+    Item(2, 2, 'safeway item'),
   ];
-  int _counter = 0;
+
+  // remove: this is a temporary id generator
+  int _counter = 3;
+
+  Future<void> showEditItemDialog(BuildContext context, Item item) async {
+    String title = 'Edit Item';
+    _editTextController.text = item.name;
+
+    return await _showDialog(
+      context,
+      title,
+      _getDialogForm(_editFormKey, _editTextController),
+      <Widget>[
+        _getDefaultCancelBtn(context),
+        _getOkBtn(
+          context,
+          _editFormKey,
+          _editTextController,
+          () => _editItem(_editTextController.text, item.id as int),
+        ),
+      ],
+    );
+  }
 
   Future<void> showAddItemDialog(BuildContext context, int shopId) async {
-    String placeholder = 'Enter item name';
-    String? input;
+    String title = 'Add Item';
 
-    Form dialogForm = Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _textEditingController,
-              validator: (value) {
-                return value!.isNotEmpty ? null : '*Item name is required';
-              },
-              onChanged: (change) => {input = change},
-              decoration: InputDecoration(
-                hintText: placeholder,
-              ),
-            ),
-          ],
-        ));
-
-    ElevatedButton cancelBtn = ElevatedButton(
-      onPressed: () => Navigator.of(context).pop(),
-      child: const Text('Cancel'),
-      style: ElevatedButton.styleFrom(
-        primary: Colors.red,
-      ),
+    return await _showDialog(
+      context,
+      title,
+      _getDialogForm(_addFormKey, _addTextController),
+      <Widget>[
+        _getDefaultCancelBtn(context),
+        _getOkBtn(
+          context,
+          _addFormKey,
+          _addTextController,
+          () => _addItem(
+            _addTextController.text,
+            shopId,
+          ),
+        ),
+      ],
     );
-
-    ElevatedButton okBtn = ElevatedButton(
-      onPressed: () => {
-        if (_formKey.currentState!.validate())
-          {
-            if (input != null)
-              {
-                _addItem(input as String, shopId),
-                _textEditingController.clear(),
-              },
-            Navigator.of(context).pop(),
-          }
-      },
-      child: const Text('OK'),
-    );
-
-    return await showDialog(
-        context: context,
-        builder: (context) {
-          return StatefulBuilder(builder: (context, setState) {
-            return AlertDialog(
-              content: dialogForm,
-              title: const Text('Add Item'),
-              actions: <Widget>[
-                cancelBtn,
-                okBtn,
-              ],
-            );
-          });
-        });
   }
 
   void _addItem(String name, int shopId) {
     setState(() {
       // Todo: should call api
-      items.add(Item(_counter, name, shopId));
+      items.add(Item(_counter, shopId, name));
       _counter++;
+    });
+  }
+
+  void _editItem(String newName, int itemId) {
+    setState(() {
+      // Todo: should call api
+      for (final i in items) {
+        if (i.id == itemId) {
+          final index = items.indexOf(i);
+
+          Item newItem = Item(i.id, i.storeId, newName);
+          items.removeAt(index);
+          items.insert(index, newItem);
+        }
+      }
     });
   }
 
@@ -118,12 +118,25 @@ class _ListPageWidgetState extends State<ListPageWidget> {
           color: Colors.lightBlue,
         ),
         itemBuilder: (context, index) {
-          // Todo: add Edit feature
           return ListTile(
             title: Text(filteredList[index].name),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => _deleteItem(filteredList[index].id),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () async {
+                    await showEditItemDialog(
+                      context,
+                      filteredList[index],
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _deleteItem(filteredList[index].id),
+                ),
+              ],
             ),
           );
         },
@@ -137,4 +150,79 @@ class _ListPageWidgetState extends State<ListPageWidget> {
       ),
     );
   }
+}
+
+/* PRIVATE
+---------------------------------------------------------------------*/
+Future<void> _showDialog(
+  BuildContext context,
+  String title,
+  Form dialogForm,
+  List<Widget> actionBtns,
+) async {
+  return await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            content: dialogForm,
+            title: Text(title),
+            actions: actionBtns,
+          );
+        });
+      });
+}
+
+Form _getDialogForm(
+  GlobalKey<FormState> formKey,
+  TextEditingController textController,
+) {
+  String placeholder = 'Enter item name';
+  String validationMsg = '*Item name is required';
+
+  return Form(
+      key: formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            controller: textController,
+            validator: (value) {
+              return value!.isNotEmpty ? null : validationMsg;
+            },
+            decoration: InputDecoration(
+              hintText: placeholder,
+            ),
+          ),
+        ],
+      ));
+}
+
+ElevatedButton _getDefaultCancelBtn(BuildContext context) {
+  return ElevatedButton(
+    onPressed: () => Navigator.of(context).pop(),
+    child: const Text('Cancel'),
+    style: ElevatedButton.styleFrom(
+      primary: Colors.red,
+    ),
+  );
+}
+
+ElevatedButton _getOkBtn(
+  BuildContext context,
+  GlobalKey<FormState> formKey,
+  TextEditingController textController,
+  VoidCallback actionFn,
+) {
+  return ElevatedButton(
+    onPressed: () => {
+      if (formKey.currentState!.validate())
+        {
+          actionFn(),
+          textController.clear(),
+          Navigator.of(context).pop(),
+        }
+    },
+    child: const Text('OK'),
+  );
 }
