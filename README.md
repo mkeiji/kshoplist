@@ -1,6 +1,5 @@
 # kshoplist
-
-A new Flutter project.
+flutter app for groceries list
 
 ## Getting Started
 
