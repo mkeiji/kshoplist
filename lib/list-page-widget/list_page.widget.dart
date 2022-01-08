@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:kshoplist/models/item.dart';
+import 'package:kshoplist/models/kmsg.dart';
 import 'package:kshoplist/models/store.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ListPageWidget extends StatefulWidget {
   const ListPageWidget({Key? key, required this.shop}) : super(key: key);
@@ -18,19 +22,84 @@ class _ListPageWidgetState extends State<ListPageWidget> {
   final TextEditingController _addTextController = TextEditingController();
   final GlobalKey<FormState> _editFormKey = GlobalKey<FormState>();
   final TextEditingController _editTextController = TextEditingController();
+  final _channel = WebSocketChannel.connect(
+    Uri.parse('ws://localhost:8080/ws/1'),
+  );
 
-  // Todo: this should come from api
-  List<Item> items = [
-    Item(1, 1, 'costco item'),
-    Item(2, 2, 'safeway item'),
-  ];
+  @override
+  void dispose() {
+    _channel.sink.close();
+    super.dispose();
+  }
 
-  // remove: this is a temporary id generator
-  int _counter = 3;
+  @override
+  Widget build(BuildContext context) {
+    String title = '${widget.shop.name} List';
+    int storeId = widget.shop.id as int;
+    List<Item> filteredList = [];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: StreamBuilder(
+        stream: _channel.stream,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var json = jsonDecode(snapshot.data as String);
+            Kmsg msg = Kmsg.fromJson(json);
+            List<Item> items = msg.items;
+            filteredList = _filterList(items, storeId);
+          } else {
+            debugPrint('hasData: ${snapshot.hasData}');
+          }
+
+          return ListView.separated(
+            itemCount: filteredList.length,
+            separatorBuilder: (BuildContext context, int index) =>
+                const Divider(
+              height: 3,
+              color: Colors.lightBlue,
+            ),
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(filteredList[index].name as String),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () async {
+                        await showEditItemDialog(
+                          context,
+                          filteredList[index],
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => _deleteItem(filteredList[index].id),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await showAddItemDialog(context, widget.shop.id as int);
+        },
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
 
   Future<void> showEditItemDialog(BuildContext context, Item item) async {
     String title = 'Edit Item';
-    _editTextController.text = item.name;
+    _editTextController.text = item.name as String;
 
     return await _showDialog(
       context,
@@ -42,7 +111,7 @@ class _ListPageWidgetState extends State<ListPageWidget> {
           context,
           _editFormKey,
           _editTextController,
-          () => _editItem(_editTextController.text, item.id as int),
+          () => _editItem(_editTextController.text, item),
         ),
       ],
     );
@@ -71,84 +140,32 @@ class _ListPageWidgetState extends State<ListPageWidget> {
   }
 
   void _addItem(String name, int shopId) {
-    setState(() {
-      // Todo: should call api
-      items.add(Item(_counter, shopId, name));
-      _counter++;
-    });
+    Kmsg newMsg = Kmsg(
+      "Request",
+      "POST",
+      [Item.noId(shopId, name)],
+    );
+    _channel.sink.add(jsonEncode(newMsg.toJson()));
   }
 
-  void _editItem(String newName, int itemId) {
-    setState(() {
-      // Todo: should call api
-      for (final i in items) {
-        if (i.id == itemId) {
-          final index = items.indexOf(i);
-
-          Item newItem = Item(i.id, i.storeId, newName);
-          items.removeAt(index);
-          items.insert(index, newItem);
-        }
-      }
-    });
+  void _editItem(String newName, Item item) {
+    Item newItem = Item(item.id, item.storeId, newName);
+    Kmsg newMsg = Kmsg(
+      "Request",
+      "PUT",
+      [newItem],
+    );
+    _channel.sink.add(jsonEncode(newMsg.toJson()));
   }
 
   void _deleteItem(int? id) {
-    setState(() {
-      // Todo: should call api
-      items.removeWhere((Item item) => item.id == id);
-      _counter--;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String title = '${widget.shop.name} List';
-    List<Item> filteredList =
-        items.where((Item i) => i.storeId == widget.shop.id).toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: ListView.separated(
-        itemCount: filteredList.length,
-        separatorBuilder: (BuildContext context, int index) => const Divider(
-          height: 3,
-          color: Colors.lightBlue,
-        ),
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(filteredList[index].name),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () async {
-                    await showEditItemDialog(
-                      context,
-                      filteredList[index],
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _deleteItem(filteredList[index].id),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await showAddItemDialog(context, widget.shop.id as int);
-        },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+    Item newItem = Item.justId(id);
+    Kmsg newMsg = Kmsg(
+      "Request",
+      "DELETE",
+      [newItem],
     );
+    _channel.sink.add(jsonEncode(newMsg.toJson()));
   }
 }
 
@@ -225,4 +242,8 @@ ElevatedButton _getOkBtn(
     },
     child: const Text('OK'),
   );
+}
+
+List<Item> _filterList(List<Item> list, int storeId) {
+  return list.where((Item i) => i.storeId == storeId).toList();
 }
