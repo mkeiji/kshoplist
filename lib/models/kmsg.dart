@@ -8,7 +8,10 @@ class Kmsg {
   Kmsg(this.type, this.action, this.items);
 
   factory Kmsg.fromJson(Map<String, dynamic> json) {
-    var itemsList = json['items'] as List;
+    var itemsList = [];
+    if (json['items'] != null) {
+      itemsList = json['items'] as List;
+    }
 
     String type = json['type'];
     String action = json['action'];

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kshoplist/models/item.dart';
 import 'package:kshoplist/models/kmsg.dart';
 import 'package:kshoplist/models/store.dart';
@@ -22,13 +23,19 @@ class _ListPageWidgetState extends State<ListPageWidget> {
   final TextEditingController _addTextController = TextEditingController();
   final GlobalKey<FormState> _editFormKey = GlobalKey<FormState>();
   final TextEditingController _editTextController = TextEditingController();
-  final _channel = WebSocketChannel.connect(
-    Uri.parse('ws://localhost:8080/ws/1'),
-  );
+  WebSocketChannel? _channel;
+
+  @override
+  void initState() {
+    super.initState();
+    _channel = WebSocketChannel.connect(
+      Uri.parse('wss://' + dotenv.get('WS_HOST') + '/ws/1'),
+    );
+  }
 
   @override
   void dispose() {
-    _channel.sink.close();
+    _channel!.sink.close();
     super.dispose();
   }
 
@@ -43,7 +50,7 @@ class _ListPageWidgetState extends State<ListPageWidget> {
         title: Text(title),
       ),
       body: StreamBuilder(
-        stream: _channel.stream,
+        stream: _channel!.stream,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             var json = jsonDecode(snapshot.data as String);
@@ -145,7 +152,7 @@ class _ListPageWidgetState extends State<ListPageWidget> {
       "POST",
       [Item.noId(shopId, name)],
     );
-    _channel.sink.add(jsonEncode(newMsg.toJson()));
+    _channel!.sink.add(jsonEncode(newMsg.toJson()));
   }
 
   void _editItem(String newName, Item item) {
@@ -155,7 +162,7 @@ class _ListPageWidgetState extends State<ListPageWidget> {
       "PUT",
       [newItem],
     );
-    _channel.sink.add(jsonEncode(newMsg.toJson()));
+    _channel!.sink.add(jsonEncode(newMsg.toJson()));
   }
 
   void _deleteItem(int? id) {
@@ -165,7 +172,7 @@ class _ListPageWidgetState extends State<ListPageWidget> {
       "DELETE",
       [newItem],
     );
-    _channel.sink.add(jsonEncode(newMsg.toJson()));
+    _channel!.sink.add(jsonEncode(newMsg.toJson()));
   }
 }
 
@@ -203,6 +210,7 @@ Form _getDialogForm(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextFormField(
+            autofocus: true,
             controller: textController,
             validator: (value) {
               return value!.isNotEmpty ? null : validationMsg;
