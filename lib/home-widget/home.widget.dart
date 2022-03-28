@@ -11,9 +11,9 @@ class HomeWidget extends StatefulWidget {
 }
 
 class _HomeWidgetState extends State<HomeWidget> {
-  /* Todo:
+  /* TODO:
    - this should come from api
-   - store images in dropbox
+   - store images in the cloud (eg: dropbox)
    - add '+' and '-' btn to be able to add/remove stores
   */
   List<Shop> shops = [
@@ -21,12 +21,11 @@ class _HomeWidgetState extends State<HomeWidget> {
     Shop(2, 'Safeway', 'assets/images/safeway-rz.png'),
     Shop(3, 'Superstore', 'assets/images/superstore-rz.png'),
     Shop(4, 'Dollarama', 'assets/images/dollarama-rz.png'),
+    Shop(5, 'Others', 'assets/images/others.png'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    // to check app conectivity
-    // hasNetwork();
     List<Widget> widgets = [];
     for (Shop s in shops) {
       widgets.add(_getSizedBoxBtn(s, context));
@@ -63,6 +62,7 @@ void _goToListPage(Shop store, BuildContext context) {
   );
 }
 
+// checks the app internet conectivity
 void hasNetwork() async {
   try {
     final result = await InternetAddress.lookup('google.com');
