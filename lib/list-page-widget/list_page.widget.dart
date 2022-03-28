@@ -18,7 +18,8 @@ class ListPageWidget extends StatefulWidget {
 
 /* STATE
 ---------------------------------------------------------------------*/
-class _ListPageWidgetState extends State<ListPageWidget> {
+class _ListPageWidgetState extends State<ListPageWidget>
+    with WidgetsBindingObserver {
   final GlobalKey<FormState> _addFormKey = GlobalKey<FormState>();
   final TextEditingController _addTextController = TextEditingController();
   final GlobalKey<FormState> _editFormKey = GlobalKey<FormState>();
@@ -28,15 +29,34 @@ class _ListPageWidgetState extends State<ListPageWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance?.addObserver(this);
     _channel = WebSocketChannel.connect(
-      Uri.parse('wss://' + dotenv.get('WS_HOST') + '/ws/1'),
+      Uri.parse(dotenv.get('WS_URL')),
     );
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance?.removeObserver(this);
     _channel!.sink.close();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      debugPrint("RESUMED");
+      setState(() {});
+      _channel = WebSocketChannel.connect(
+        Uri.parse(dotenv.get('WS_URL')),
+      );
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      debugPrint("INACTIVE/PAUSED");
+      _channel!.sink.close();
+    } else if (state == AppLifecycleState.detached) {
+      debugPrint('DETACHED');
+    }
   }
 
   @override
