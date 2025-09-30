@@ -1,4 +1,4 @@
-name: Build
+name: Docker
 
 on:
     push:
@@ -16,5 +16,5 @@ jobs:
             dockerfile: ./Dockerfile
             image_suffix: ${{ github.repository }}
             release_branch: master
-            build_args: WS_URL=${{ secrets.WS_URL }}
+            build_args: ${{ vars.BUILD_ARGS }}
         secrets: inherit
