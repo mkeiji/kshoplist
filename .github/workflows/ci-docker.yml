@@ -1,0 +1,20 @@
+name: Build
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    build:
+        uses: mkeiji/kcicd/.github/workflows/ci-docker.yml@master
+        with:
+            build_context: ./
+            dockerfile: ./Dockerfile
+            image_suffix: ${{ github.repository }}
+            release_branch: master
+            build_args: WS_URL=${{ secrets.WS_URL }}
+        secrets: inherit
