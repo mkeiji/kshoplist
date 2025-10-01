@@ -15,5 +15,5 @@ jobs:
             build_context: ./
             dockerfile: ./Dockerfile
             release_branch: master
-            build_args: ${{ vars.BUILD_ARGS }}
+            build_args: WS_URL=kshoplistsrv.keijidev.com
         secrets: inherit
