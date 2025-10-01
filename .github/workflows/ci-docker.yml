@@ -14,7 +14,6 @@ jobs:
         with:
             build_context: ./
             dockerfile: ./Dockerfile
-            image_suffix: kshoplist
             release_branch: master
             build_args: ${{ vars.BUILD_ARGS }}
         secrets: inherit
