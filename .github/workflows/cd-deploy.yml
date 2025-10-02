@@ -1,0 +1,13 @@
+name: Deployment
+
+on:
+    workflow_run:
+        workflows:
+            - Build
+        types:
+            - completed
+
+jobs:
+    deploy:
+        uses: mkeiji/kcicd/.github/workflows/cd-deploy.yml@master
+        secrets: inherit
