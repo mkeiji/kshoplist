@@ -1,5 +1,3 @@
-ARG WS_URL
-
 # --- Build Stage ---
 FROM debian:bullseye-slim AS build
 
@@ -17,11 +15,22 @@ RUN chown -R flutteruser:flutteruser /usr/local/flutter
 USER flutteruser
 
 RUN flutter config --enable-web
+
 WORKDIR /app
 COPY --chown=flutteruser:flutteruser . .
-RUN mkdir -p assets && echo "WS_URL=wss://${WS_URL}/ws/1" > assets/.env
+
 RUN flutter pub get
-RUN flutter build web --release
+
+ARG HOST_ADDR
+ENV HOST_ADDR=${HOST_ADDR}
+
+RUN if [ -z "$HOST_ADDR" ]; then \
+      echo "❌ ERROR: HOST_ADDR build-arg is required!" && exit 1; \
+    else \
+      echo "✅ HOST_ADDR build-arg is present, proceeding..."; \
+    fi
+
+RUN flutter build web --release --dart-define=WS_URL=wss://${HOST_ADDR}/ws/1
 
 # --- Serve Stage ---
 FROM nginx:alpine AS serve

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kshoplist/models/item.dart';
 import 'package:kshoplist/models/kmsg.dart';
 import 'package:kshoplist/models/store.dart';
+import 'package:kshoplist/models/env.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ListPageWidget extends StatefulWidget {
@@ -31,7 +31,7 @@ class _ListPageWidgetState extends State<ListPageWidget>
     super.initState();
     WidgetsBinding.instance?.addObserver(this);
     _channel = WebSocketChannel.connect(
-      Uri.parse(dotenv.get('WS_URL')),
+      Uri.parse(Env.wsUrl),
     );
   }
 
@@ -48,7 +48,7 @@ class _ListPageWidgetState extends State<ListPageWidget>
       debugPrint("RESUMED");
       setState(() {});
       _channel = WebSocketChannel.connect(
-        Uri.parse(dotenv.get('WS_URL')),
+        Uri.parse(Env.wsUrl),
       );
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {

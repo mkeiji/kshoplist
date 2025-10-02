@@ -52,9 +52,14 @@ flutter run
 flutter run -d chrome
 ```
 
+> Make sure to set the `WS_URL` with `--dart-define` if needed.
+
 #### Docker (Web)
+HOST_ADDR is what will be used to set WS_URL in the app.
+make sure to replace `[[host-addr]]` with your server address
+(e.g., `localhost:8080` for local build or your domain for production)
 ```bash
-docker build --build-arg WS_URL=[[host-addr]] -t kshoplist .
+docker build --build-arg HOST_ADDR=[[host-addr]] -t kshoplist .
 docker run --rm -p 8080:80 kshoplist
 ```
 
@@ -73,15 +78,8 @@ Access the app at `http://localhost:8080`
 ---
 
 ## Configuration
+- if you deploy, make sure to Set the websocket url `WS_URL` with `--dart-define` to your server URL:
+    - On mobile/desktop → use `flutter run --dart-define=WS_URL=wss://prod.example.com/ws`
+    - On web → use `flutter build web --dart-define=WS_URL=wss://prod.example.com/ws`
 
-- WebSocket URL and other secrets are managed in `assets/.env` (uses `flutter_dotenv`)
-- if you deploy, make sure to Set the `WS_URL` in `.env` to your server URL:
-    ```.env
-    # PROD
-    # WS_URL=wss://<<host-addr>>/ws/1
-
-    # DEV
-    WS_URL=ws://localhost:8081/ws/1
-
-    ```
 - To add a new store, update the `shops` list in `lib/home-widget/home.widget.dart` and add an image to `assets/images/`
